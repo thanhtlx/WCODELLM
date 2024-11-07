@@ -46,7 +46,7 @@ args = parser.parse_args()
 print(args.model.replace('/', '_'))
 ml_time = int(time.time() * 1000)
 layer_name = '_'.join(str(x) for x in args.layers)
-OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{ml_time}_{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{layer_name}')
+OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{layer_name}')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 logInfo = open(os.path.join(OUTPUT_DIR, "logInfo.txt"), mode="w",encoding="utf-8")
 
@@ -149,9 +149,11 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         # print(batch)
         input_ids = batch['input_ids'].to(device)
         # print(f"input_ids: {input_ids}")
-        # print(f"input_ids shape: {input_ids.shape}")
+        print(f"input_ids shape: {input_ids.shape}")
         # print(f"attention_mask: {batch['attention_mask']}")
         # print(f"attention_mask shape: {batch['attention_mask'].shape}")
+        if input_ids.shape[-1] >300:
+            continue
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
         
