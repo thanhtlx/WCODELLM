@@ -121,7 +121,10 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     utils.seed_everything(seed)
     dataset = get_dataset_fn(args.dataset)(tokenizer, language=args.language)
     cleanup_code = get_clean_up_code_fn(args.dataset)
-    stop_words = dataset[0]['stopwords']
+    if hasattr(dataset[0],'stopwords'):
+        stop_words = dataset[0]['stopwords']
+    else:
+        stop_words = []
     # print(stop_words)
     
     # stop_criteria = KeywordsStoppingCriteria(stop_words, tokenizer)
@@ -138,7 +141,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     time_start=time.time()
     for batch_idx, batch in tqdm.tqdm(enumerate(dataloader), total=len(dataloader)):
         # print(batch.keys())
-        task_id_path = batch['task_id'][0].replace('/','_').replace('[','_').replace(']','_')
+        task_id_path = str(batch['task_id'][0]).replace('/','_').replace('[','_').replace(']','_')
         out_dir_task_id = os.path.join(cache_dir,f"{task_id_path}.pkl")
         if batch['task_id'][0] in old_sequences:
             sequences.append(old_sequences[batch['task_id'][0]])
@@ -152,7 +155,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         print(f"input_ids shape: {input_ids.shape}")
         # print(f"attention_mask: {batch['attention_mask']}")
         # print(f"attention_mask shape: {batch['attention_mask'].shape}")
-        if input_ids.shape[-1] >300:
+        if input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9:
             continue
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
