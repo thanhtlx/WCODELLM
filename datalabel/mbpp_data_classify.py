@@ -10,9 +10,9 @@ import json
 import os
 from benchmark.MBPP.human_eval.evaluation import evaluate_functional_correctness_each_sample
 
-data_root = "/drive2/thanhvt/lab/WCODELLM/benchmark/MBPP/data"
-continue_from = '/drive2/thanhvt/lab/WCODELLM/0.pkl'
-label_continue_from = '/drive2/thanhvt/lab/WCODELLM/0_label.pkl'
+data_root = "benchmark/MBPP/data"
+continue_from = '0.pkl'
+label_continue_from = '0_label.pkl'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
 model_name = 'deepseek-ai/deepseek-coder-1.3b-base'
