@@ -1,11 +1,13 @@
 #deepseek-ai/deepseek-coder-6.7b-instruct
 #Qwen/Qwen2.5-Coder-3B-Instruct
 #codellama/CodeLlama-7b-Instruct-hf
-
+pip install hf_transfer
+pip install "huggingface_hub[hf_transfer]"
 # MODEL=$1
 LANGUAGE=$1
 MODEL='deepseek-ai/deepseek-coder-6.7b-instruct'
 MODEL_NAME='deepseek-ai_deepseek-coder-6.7b-instruct'
+HF_HUB_ENABLE_HF_TRANSFER=1 huggingface-cli download $MODEL
 
 # echo "MODEL: ${MODEL}"
 echo "LANGUAGE: ${LANGUAGE}"
