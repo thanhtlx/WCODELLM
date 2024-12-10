@@ -107,7 +107,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         stop_words = []
     if args.fraction_of_data_to_use < 1.0:
         dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
-    #dataset = sorted(dataset, key=lambda x: len(x['prompt']), reverse=True)
+    dataset = sorted(dataset, key=lambda x: len(x['prompt']), reverse=True)
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
     print('len dataset', len(dataloader))
@@ -153,7 +153,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                             pad_token_id=tokenizer.eos_token_id,
                             output_hidden_states = True, return_dict_in_generate=True, output_scores=True
                             )
-            print(dict_outputs.keys())
+            #print(dict_outputs.keys())
             generation = dict_outputs.sequences[:, input_length:].cpu()
             # print(f"Generation shape: {generation.shape}")
             for gen in generation:
