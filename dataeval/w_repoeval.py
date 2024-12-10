@@ -88,7 +88,7 @@ def _save_dataset(tokenizer, language, max_seq_len, max_gen_len, sft=False, inst
 
 # _save_dataset(sft=False)
 def get_dataset(tokenizer, language, sft=False, instruction=False):
-    dataset = datasets.load_from_disk(_save_dataset(tokenizer, language, max_seq_len=4096, max_gen_len=1024, sft=sft, instruction=instruction))
+    dataset = datasets.load_from_disk(_save_dataset(tokenizer, language, max_seq_len=2048, max_gen_len=512, sft=sft, instruction=instruction))
 
     def encode_humaneval(example):
         prompt = example['prompt']

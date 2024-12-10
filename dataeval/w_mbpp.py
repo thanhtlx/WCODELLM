@@ -129,7 +129,7 @@ def _save_dataset(tokenizer, max_seq_len, max_gen_len, instruction=False):
 
 # _save_dataset(sft=False)
 
-def get_dataset(tokenizer, language='python', instruction=False, max_seq_len=2048, max_gen_len=1000):
+def get_dataset(tokenizer, language='python', instruction=False, max_seq_len=2048, max_gen_len=512):
     dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len, instruction))
     
     def encode_mbpp(example):
@@ -200,7 +200,8 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
     
     try:
         # print(output)
-        code_block: str = re.findall(f'```python\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        # code_block: str = re.findall(f'```python\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        code_block: str = re.findall(r'```(?:python)?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
         # print(code_block)
         generation = code_block
         # print(f"Function Prefix: {func_prefix}")

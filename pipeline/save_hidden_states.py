@@ -20,10 +20,13 @@ import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
 import dataeval.w_evocodebench as evocodebench
+import dataeval.w_repoexec as repo_exec
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
 from func.metric import *
+
+passed_input_len_task = ['repo_eval', 'evocodebench', 'repoexec']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='llama-13b-hf')
@@ -32,6 +35,7 @@ parser.add_argument('--device', type=str, default='cuda:0')
 parser.add_argument('--tensor_parallel_size', type=int, default=1)
 parser.add_argument('--fraction_of_data_to_use', type=float, default=1.0)
 parser.add_argument('--num_generations_per_prompt', type=int, default=10)
+parser.add_argument('--max_num_gen_once', type=int, default=2)
 parser.add_argument('--max_new_tokens', type=int, default=500)
 parser.add_argument('--temperature', type=float, default=0.5)
 parser.add_argument('--decoding_method', type=str, default='greedy')
@@ -80,11 +84,13 @@ def get_dataset_fn(data_name):
         return repo_eval.get_dataset
     if data_name == 'evocodebench':
         return evocodebench.get_dataset
+    if data_name == 'repoexec':
+        return repo_exec.get_dataset
     raise ValueError(f"Unknown dataset {data_name}")
 
 
 @torch.no_grad()
-def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.num_generations_per_prompt,cache_dir='output'):
+def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.max_num_gen_once,cache_dir='output'):
     device = args.device
     model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)    
     utils.seed_everything(seed)
@@ -123,7 +129,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
 
         input_ids = batch['input_ids'].to(device)
         print(f"input_ids shape: {input_ids.shape}")
-        if args.dataset != 'repo_eval' and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
+        if args.dataset not in passed_input_len_task  and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
             continue
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
@@ -132,6 +138,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         generations_decoded = []
         # print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
         num_gens = args.num_generations_per_prompt
+        all_token_hidden_states_layer_list = {}
+        off_set = 0
         while num_gens > 0:
             dict_outputs =  model.generate(input_ids, attention_mask=batch['attention_mask'].to(device),
                             num_beams=1, max_new_tokens=args.max_new_tokens, num_return_sequences=min(max_num_gen_once, num_gens),
@@ -152,14 +160,17 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             layers_to_process = args.layers
             hidden_states = dict_outputs.hidden_states
             ###### hidden_states : (num_tokens, num_layers, num_seq, num_input_tokens/1, embedding_size)
-            all_token_hidden_states_layer_list = {}
+            
             for layer in layers_to_process:
                 all_token_hidden_states_layer = {}
                 for ind in range(hidden_states[1][-1].shape[0]):
-                    all_token_hidden_states_layer[ind] = []
+                    all_token_hidden_states_layer[ind + off_set] = []
                     for hidden_state in hidden_states[1:]:
-                        all_token_hidden_states_layer[ind].append(hidden_state[layer][ind, -1, :].detach().cpu().float().numpy())
-                all_token_hidden_states_layer_list[layer] = all_token_hidden_states_layer
+                        all_token_hidden_states_layer[ind + off_set].append(hidden_state[layer][ind, -1, :].detach().cpu().float().numpy())
+
+                if layer not in all_token_hidden_states_layer_list:
+                    all_token_hidden_states_layer_list[layer] = {}
+                all_token_hidden_states_layer_list[layer].update(all_token_hidden_states_layer)
             # return hidden_state
             
             for gen_ids in generations:
@@ -173,7 +184,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             gc.collect()
             torch.cuda.empty_cache()
             num_gens -= len(generation)
-        
+            off_set += len(generation)
+            
         for layer in layers_to_process:
             layer_embeddings = all_token_hidden_states_layer_list[layer]
             layer_embeddings_dict = dict(
