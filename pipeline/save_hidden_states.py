@@ -168,18 +168,13 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                 for ind in range(hidden_states[1][-1].shape[0]):
                     all_token_hidden_states_layer[ind + off_set] = []
                     for hidden_state in hidden_states[1:]:
-                        #print(hidden_state.shape)
                         tmp_hs = hidden_state[layer]
-                        #print(tmp_hs.shape)
                         tmp_hs_layer = tmp_hs[ind, -1, :].detach().cpu().float().numpy()
                         all_token_hidden_states_layer[ind + off_set].append(tmp_hs_layer)
 
                 if layer not in all_token_hidden_states_layer_list:
                     all_token_hidden_states_layer_list[layer] = {}
                 all_token_hidden_states_layer_list[layer].update(all_token_hidden_states_layer)
-            # return hidden_state
-            
-                
             del dict_outputs
             gc.collect()
             torch.cuda.empty_cache()
